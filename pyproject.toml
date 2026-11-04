@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "metricpact"
-version = "0.1.0"
-description = "Governed natural-language analytics with grain-safe joins"
+version = "0.2.0"
+description = "Governed natural-language analytics with grain and calendar safety"
 requires-python = ">=3.11"
 
 [project.scripts]

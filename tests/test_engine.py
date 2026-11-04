@@ -1,7 +1,9 @@
 import unittest
+
 from metricpact.benchmark import run_benchmark
 from metricpact.data import ORDERS, ORDER_ITEMS
-from metricpact.engine import GrainError, MetricPact, Status, assert_unique, check_join_grain
+from metricpact.engine import GovernedCalendar, GrainError, MetricPact, Status, assert_unique, check_join_grain
+
 
 class EngineTests(unittest.TestCase):
     def setUp(self): self.engine = MetricPact()
@@ -23,5 +25,30 @@ class EngineTests(unittest.TestCase):
     def test_duplicate_declared_grain(self):
         with self.assertRaises(GrainError): assert_unique([{"id": 1}, {"id": 1}], ("id",), "bad")
     def test_benchmark(self): self.assertEqual(run_benchmark()["accuracy"], 1.0)
+    def test_unspecified_year_requires_calendar(self):
+        result = self.engine.ask("gross sales by year")
+        self.assertEqual(Status.CLARIFY, result.status)
+        self.assertEqual(["calendar", "retail_fiscal"], result.evidence["available_calendars"])
+    def test_calendar_year_keeps_one_bucket(self):
+        result = self.engine.ask("gross sales by calendar year")
+        self.assertEqual([{"year": "2026", "gross_sales": 700.0}], result.rows)
+    def test_fiscal_year_moves_january_to_prior_year(self):
+        result = self.engine.ask("gross sales by fiscal year")
+        self.assertEqual([{"year": "FY2025", "gross_sales": 200.0}, {"year": "FY2026", "gross_sales": 500.0}], result.rows)
+    def test_fiscal_quarter_boundaries(self):
+        result = self.engine.ask("orders by fiscal quarter")
+        self.assertEqual([{"quarter": "FY2025-Q4", "order_count": 2}, {"quarter": "FY2026-Q1", "order_count": 4}], result.rows)
+    def test_calendar_evidence_and_sql(self):
+        result = self.engine.ask("net sales by fiscal year")
+        self.assertEqual("retail_fiscal", result.evidence["calendar"])
+        self.assertEqual(2, result.evidence["year_start_month"])
+        self.assertIn("CASE WHEN", result.sql)
+    def test_conflicting_calendar_terms_require_clarification(self):
+        self.assertEqual(Status.CLARIFY, self.engine.ask("gross sales by calendar fiscal year").status)
+    def test_invalid_calendar_rejected(self):
+        with self.assertRaises(ValueError): GovernedCalendar("bad", "Bad", 13)
+    def test_empty_calendar_registry_rejected(self):
+        with self.assertRaises(ValueError): MetricPact(calendars={})
+
 
 if __name__ == "__main__": unittest.main()

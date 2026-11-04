@@ -1,15 +1,16 @@
 # Product backlog
 
-MetricPact already ships governed metric selection, SQL disclosure, ambiguity handling,
-scan limits, reconciliation evidence, and join-grain rejection. Ideas below are deliberately
-marked as planned, not complete.
+MetricPact ships governed metric selection, SQL disclosure, ambiguity handling, scan limits, reconciliation evidence, join-grain rejection and explicit fiscal-calendar semantics. Planned work remains clearly separated from shipped behavior.
 
 | Priority | Feature | User problem and behavior | Dependencies | Success test | Risks / trade-offs | Status |
 |---|---|---|---|---|---|---|
-| P0 | Fiscal-calendar semantics | Calendar queries can misstate fiscal performance. Add governed calendars and require one when wording is ambiguous. | Calendar registry | Fiscal benchmark has zero boundary errors. | More clarification prompts. | Planned |
-| P0 | Metric-definition compare | Teams use conflicting definitions. Show both formulas, owners, and side-by-side results before selection. | Versioned metric catalog | 100% of known collisions surface before execution. | Can slow simple queries. | Planned |
+| P0 | Fiscal-calendar semantics | Calendar queries can misstate fiscal performance. Require an explicit governed calendar for year/quarter wording and expose its version. | Calendar registry | Frozen January/February boundary fixture has zero bucket errors; unspecified calendar clarifies. | More clarification prompts; simplified calendar rules. | Shipped |
+| P0 | Metric-definition comparison | Teams use conflicting definitions. Show formulas, owners and both results on a fixed snapshot before selection. | Versioned metric catalog | 100% of seeded definition collisions surface before execution. | Two answers can confuse users; labels and decision context are required. | Planned |
+| P1 | Partial-period completeness gate | Current-period totals look comparable before the period closes. Mark incomplete periods and suppress default prior-period comparison. | Data watermark, calendar registry | Seeded mid-period snapshot never presents a complete-period claim. | Conservative gates delay useful directional signals. | Explored |
+| P1 | Calendar migration preview | A calendar-rule change silently rewrites historical buckets. Diff old/new assignments and affected saved questions before promotion. | Versioned calendars, saved query plans | Seeded start-month change reports every reassigned boundary record. | Large diffs can overwhelm reviewers. | Explored |
 | P1 | Row-level policy preview | Analysts cannot see why totals differ. Explain applied access filters without exposing restricted values. | Identity/policy adapter | No forbidden row is returned in adversarial tests. | Explanations can leak policy shape. | Planned |
 | P1 | Semantic drift alarms | Schema changes silently invalidate metrics. Diff lineage and quarantine affected metrics. | Warehouse metadata | Breaking fixture blocks certification. | False positives during migrations. | Planned |
-| P2 | Certified saved questions | Repeated decisions need stable artifacts. Pin question, plan, semantic version and evidence hash. | Durable store | Replays are byte-for-byte reproducible. | Stale answers may look current. | Planned |
+| P2 | Certified saved questions | Repeated decisions need stable artifacts. Pin question, plan, semantic version, calendar version and evidence hash. | Durable store | Replays are byte-for-byte reproducible. | Stale answers may look current. | Planned |
+| P2 | Definition-decision provenance | Teams forget why one metric definition won. Record decision context, owner, approval and supersession chain. | Versioned catalog, identity | A superseded definition cannot certify a new answer. | Governance overhead for low-risk metrics. | Explored |
 | P2 | Benchmark contamination guard | Curated prompts can overstate accuracy. Version hidden paraphrases and report subgroup results. | Evaluation registry | Holdout score remains within 5 points. | More maintenance and slower releases. | Planned |
 | P3 | Anomaly explanation | Users need drivers, not only totals. Rank governed segment contributions with uncertainty. | Statistical module | Synthetic planted driver ranks first. | Correlation may be mistaken for causation. | Planned |
